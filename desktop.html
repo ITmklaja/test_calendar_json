@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalendarz wyścigowy 2025 - Desktop</title>
+  <style>
+    /* Ukrycie paska przewijania */
+    ::-webkit-scrollbar { display: none; }
+    body { -ms-overflow-style: none; scrollbar-width: none; }
+    html, body {
+      width: 100%; max-width: 100%; margin: 0; padding: 0;
+      background: #023E42; color: #fff; font-family: Arial, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    header { background-color: #023E42; padding: 10px; text-align: center; }
+    header h1 { font-size: 24px; margin: 0 auto; }
+    .main-content { flex: 1; display: flex; width: 100%; }
+    .calendar-container { flex: 1; order: 1; width: 100%; padding: 40px 60px; position: relative; }
+    .calendar-wrapper { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; width: 100%; }
+    .calendar-center { flex: 1; }
+    .calendar-grid { display: grid; gap: 15px; grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 1720px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1400px) { .calendar-grid { grid-template-columns: 1fr; } }
+    .month {
+      background-color: #023E42; padding: 10px; display: flex; flex-direction: column;
+      border-radius: 6px; position: relative;
+    }
+    .month-label { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+    .weekdays div { text-align: center; font-weight: bold; font-size: 12px; color: #eee; }
+    .days { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .day {
+      background: #023E42; position: relative; min-height: 80px; border: 1px solid #fff;
+      overflow: hidden; transition: background 0.3s;
+    }
+    .day:hover { background: #035765; }
+    .day-number { position: absolute; top: 5px; left: 5px; font-size: 13px; font-weight: bold; }
+    .event-bar {
+      width: 100%; font-size: 12px; font-weight: bold; line-height: 14px; border-radius: 3px;
+      margin-bottom: 2px; height: 20px; text-align: center; position: relative;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default;
+    }
+    .event-bar:hover::after {
+      content: attr(data-round); position: absolute; bottom: 100%; left: 50%;
+      transform: translate(-50%, -3px); background: #fff; color: #000; font-size: 10px;
+      padding: 2px 5px; border-radius: 3px; pointer-events: none; z-index: 999;
+    }
+    /* Panel filtrów */
+    #filtersPanel {
+      width: 320px; background: #023E42; padding: 20px; overflow-y: auto; flex-shrink: 0; order: 2;
+    }
+    .filters-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .filter-item { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; }
+    .custom-checkbox {
+      width: 20px; height: 20px; border-radius: 3px; background-color: #fff; margin-right: 8px;
+      transition: background-color 0.2s;
+    }
+    .filter-name { font-size: 14px; }
+    .filter-buttons { margin-top: 4px; display: flex; gap: 6px; }
+    .filter-btn {
+      background-color: #fff; color: #023E42; border: none; border-radius: 3px;
+      padding: 6px 12px; cursor: pointer; font-size: 14px; transition: opacity 0.2s;
+    }
+    .filter-btn:hover { opacity: 0.8; }
+    .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .toggle-switch {
+      width: 40px; height: 20px; background-color: #00A1A7; border-radius: 10px; position: relative;
+      cursor: pointer; transition: background-color 0.2s;
+    }
+    .toggle-knob {
+      width: 16px; height: 16px; background-color: #fff; border-radius: 50%;
+      position: absolute; top: 2px; left: 2px; transition: left 0.2s;
+    }
+    .toggle-switch.active .toggle-knob { left: 22px; }
+    .toggle-label { font-size: 12px; }
+    #savePreferencesContainer { margin-top: 20px; text-align: center; }
+    #btnSavePreferences {
+      background-color: #00A1A7; color: #fff; border: none; border-radius: 4px;
+      padding: 8px 16px; font-size: 14px; cursor: pointer; transition: background 0.2s, transform 0.2s;
+    }
+    #btnSavePreferences:hover { background-color: #008f94; transform: scale(1.03); }
+    #popAlert {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background-color: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 4px;
+      font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+    }
+    /* Pop-up w prawym dolnym rogu */
+    .desktop-popup {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ff0000;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 1000;
+    }
+    .desktop-popup a { color: #fff; text-decoration: none; font-weight: bold; }
+    footer { background-color: #023E42; text-align: center; padding: 10px; color: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kalendarz wyścigowy 2025</h1>
+  </header>
+  <div class="main-content">
+    <div class="calendar-container" id="calendarContainer">
+      <div class="calendar-wrapper">
+        <div class="calendar-left">
+          <button class="nav-button" id="btnMonthPrev">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+              <path d="M10 12L4 8l6-4v8z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="calendar-center">
+          <div class="calendar-grid" id="calendarGrid">
+            <!-- Kalendarz generowany dynamicznie przez JS -->
+          </div>
+        </div>
+        <div class="calendar-right">
+          <button class="nav-button" id="btnMonthNext">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+              <path d="M6 4l6 4-6 4V4z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="nav-back-container" id="navBackContainer">
+        <button id="btnMonthBack">
+          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+            <path d="M4 6l4 4 4-4H4z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="filtersPanel">
+      <div class="toggle-row">
+        <div id="toggleSwitch" class="toggle-switch">
+          <div class="toggle-knob"></div>
+        </div>
+        <div id="toggleLabel" class="toggle-label">Tryb: Serie/Mistrzostwa</div>
+      </div>
+      <div id="filtersSeries">
+        <div class="filters-title">Serie / Mistrzostwa</div>
+        <!-- Filtry generowane dynamicznie przez JS -->
+      </div>
+      <div id="filtersDriversTeams" style="display:none;">
+        <div class="filters-title">Kierowcy</div>
+        <!-- Filtry kierowców generowane dynamicznie przez JS -->
+        <div class="filters-title" style="margin-top:10px;">Zespoły</div>
+        <!-- Filtry zespołów generowane dynamicznie przez JS -->
+      </div>
+      <div class="filter-buttons">
+        <button class="filter-btn" id="btnCheckAllSeries">Pokaż wszystko</button>
+        <button class="filter-btn" id="btnUncheckAllSeries">Ukryj wszystko</button>
+      </div>
+      <div id="savePreferencesContainer">
+        <button class="filter-btn" id="btnSavePreferences">Zapisz preferencje</button>
+      </div>
+    </div>
+  </div>
+  <div id="popAlert">wybór został zapisany</div>
+  <div class="desktop-popup">
+    <a href="mobile.html?choice=mobile">Wypróbuj aplikację mobilną</a>
+  </div>
+  <footer>
+    <p>Made by Maciej Klaja</p>
+    <p>wszystkie prawa zastrzeżone 2025</p>
+    <a href="https://buycoffee.to/maciek-klaja" target="_blank">
+      <img src="https://buycoffee.to/img/share-button-primary.png" style="width: 195px; height: 51px" alt="Postaw mi kawę na buycoffee.to">
+    </a>
+  </footer>
+  <script>
+    (async function() {
+      try {
+        const response = await fetch("data2025.json");
+        const data2025 = await response.json();
+        initialize(data2025);
+        initializeData(data2025);
+        buildEventsByDay();
+        initCalendar();
+        initFilters();
+        applyFilters();
+        adjustWeekHeights();
+        attachMonthListeners();
+      } catch (err) {
+        console.error("Błąd ładowania JSON:", err);
+      }
+    })();
+    
+    // Global variables
+    let eventsByDay = {};
+    let processedRounds = [];
+    let activeSeries = {};
+    let activeChampionships = {};
+    let activeDrivers = {};
+    let activeTeams = {};
+    let driverRoundsMap = {};
+    let teamRoundsMap = {};
+    let singleMonthActive = false;
+    let currentMonthIndex = null;
+    let months = [];
+    const seasonStart = "2025-01-01";
+    const seasonEnd = "2025-12-31";
+    const yearStartTs = new Date(seasonStart).getTime();
+    const yearEndTs = new Date(seasonEnd).getTime();
+    
+    function initialize(data2025) {
+      // Budujemy mapy dla mistrzostw i serii
+      window.champMap = {};
+      data2025.championships.forEach(ch => {
+         if(ch.status == 1) { champMap[ch.id] = ch; }
+      });
+      window.seriesMap = {};
+      data2025.series.forEach(s => {
+         if(s.status == 1) { seriesMap[s.id] = s; }
+      });
+      window.champToSeries = {};
+      data2025.series_championship.forEach(sc => {
+         champToSeries[sc.championship_id] = sc.series_id;
+      });
+    }
+    
+    function initializeData(data2025) {
+      processedRounds = [];
+      data2025.rounds.forEach(r => {
+         if(r.status != 1) return;
+         let chId = r.championship_id;
+         if(champMap[chId]) {
+            r.championship_name = champMap[chId].name;
+            r.championship_shortcut = champMap[chId].shortcut;
+            r.championship_color = champMap[chId].color;
+            r.championship_text_color = champMap[chId].text_color;
+            r.championship_weight = champMap[chId].weight;
+         }
+         if(champToSeries[chId] && seriesMap[champToSeries[chId]]) {
+            let sId = champToSeries[chId];
+            r.series_id = sId;
+            r.series_name = seriesMap[sId].name;
+            r.series_color = seriesMap[sId].color;
+            r.series_text_color = seriesMap[sId].text_color;
+            r.series_weight = seriesMap[sId].weight;
+         }
+         processedRounds.push(r);
+      });
+      processedRounds.sort((a, b) => {
+         if(a.start_date == b.start_date) {
+            let weightA = a.series_weight * 100 + a.championship_weight;
+            let weightB = b.series_weight * 100 + b.championship_weight;
+            return weightA - weightB;
+         }
+         return new Date(a.start_date) - new Date(b.start_date);
+      });
+      data2025.series.forEach(s => {
+         if(s.status == 1) { activeSeries[s.id] = true; }
+      });
+      data2025.championships.forEach(ch => {
+         if(ch.status == 1) { activeChampionships[ch.id] = true; }
+      });
+      data2025.drivers.forEach(d => {
+         if(d.status == 1) { activeDrivers[d.id] = false; }
+      });
+      data2025.teams.forEach(t => {
+         if(t.status == 1) { activeTeams[t.id] = false; }
+      });
+      data2025.driver_round.forEach(dr => {
+         if(!driverRoundsMap[dr.driver_id]) driverRoundsMap[dr.driver_id] = [];
+         driverRoundsMap[dr.driver_id].push(dr.round_id);
+      });
+      data2025.team_round.forEach(tr => {
+         if(!teamRoundsMap[tr.team_id]) teamRoundsMap[tr.team_id] = [];
+         teamRoundsMap[tr.team_id].push(tr.round_id);
+      });
+    }
+    
+    function buildEventsByDay() {
+      eventsByDay = {};
+      for(let t = yearStartTs; t <= yearEndTs; t += 86400000) {
+         let d = new Date(t);
+         let dayStr = d.toISOString().split("T")[0];
+         eventsByDay[dayStr] = [];
+      }
+      processedRounds.forEach(r => {
+         let startTs = new Date(r.start_date).getTime();
+         let endTs = new Date(r.end_date).getTime();
+         if(startTs < yearStartTs) startTs = yearStartTs;
+         if(endTs > yearEndTs) endTs = yearEndTs;
+         for(let t = startTs; t <= endTs; t += 86400000) {
+            let d = new Date(t);
+            let dayStr = d.toISOString().split("T")[0];
+            eventsByDay[dayStr].push({
+               round_id: r.id,
+               round_name: r.name,
+               series_id: r.series_id,
+               series_name: r.series_name,
+               series_color: r.series_color,
+               series_text_color: r.series_text_color,
+               championship_id: r.championship_id,
+               championship_name: r.championship_name,
+               championship_shortcut: r.championship_shortcut,
+               championship_color: r.championship_color,
+               championship_text_color: r.championship_text_color,
+               order_weight: r.series_weight * 100 + r.championship_weight
+            });
+         }
+      });
+      for(let day in eventsByDay) {
+         eventsByDay[day].sort((a, b) => a.order_weight - b.order_weight);
+      }
+    }
+    
+    function initCalendar() {
+      const calendarGrid = document.getElementById("calendarGrid");
+      calendarGrid.innerHTML = "";
+      const weekdaysFull = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
+      const monthNamesFull = {1:"Styczeń",2:"Luty",3:"Marzec",4:"Kwiecień",5:"Maj",6:"Czerwiec",7:"Lipiec",8:"Sierpień",9:"Wrzesień",10:"Październik",11:"Listopad",12:"Grudzień"};
+      for(let m = 1; m <= 12; m++){
+         let monthDiv = document.createElement("div");
+         monthDiv.className = "month";
+         monthDiv.setAttribute("data-month", m);
+         monthDiv.setAttribute("data-month-full", monthNamesFull[m]);
+         let monthLabel = document.createElement("div");
+         monthLabel.className = "month-label";
+         monthLabel.textContent = monthNamesFull[m];
+         monthDiv.appendChild(monthLabel);
+         let weekdaysDiv = document.createElement("div");
+         weekdaysDiv.className = "weekdays";
+         weekdaysFull.forEach(function(wd) {
+            let wdDiv = document.createElement("div");
+            wdDiv.textContent = wd;
+            weekdaysDiv.appendChild(wdDiv);
+         });
+         monthDiv.appendChild(weekdaysDiv);
+         let daysDiv = document.createElement("div");
+         daysDiv.className = "days";
+         let firstDate = new Date("2025-" + m + "-01");
+         let firstDOW = firstDate.getDay();
+         firstDOW = firstDOW === 0 ? 7 : firstDOW;
+         let emptyBefore = firstDOW - 1;
+         for(let i = 0; i < emptyBefore; i++){
+            let emptyDiv = document.createElement("div");
+            emptyDiv.className = "day";
+            daysDiv.appendChild(emptyDiv);
+         }
+         let daysInMonth = new Date(2025, m, 0).getDate();
+         for(let d = 1; d <= daysInMonth; d++){
+            let dateStr = "2025-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d);
+            let dayDiv = document.createElement("div");
+            dayDiv.className = "day";
+            dayDiv.setAttribute("data-date", dateStr);
+            let dayNumber = document.createElement("div");
+            dayNumber.className = "day-number";
+            dayNumber.textContent = d;
+            dayDiv.appendChild(dayNumber);
+            if(eventsByDay[dateStr] && eventsByDay[dateStr].length > 0) {
+              let eventsContainer = document.createElement("div");
+              eventsContainer.className = "events-container";
+              eventsByDay[dateStr].forEach(function(evt) {
+                 let evtBar = document.createElement("div");
+                 evtBar.className = "event-bar";
+                 evtBar.setAttribute("data-round-id", evt.round_id);
+                 evtBar.setAttribute("data-series-id", evt.series_id);
+                 evtBar.setAttribute("data-championship-id", evt.championship_id);
+                 evtBar.setAttribute("data-round", evt.round_name);
+                 evtBar.setAttribute("data-championship-name", evt.championship_name);
+                 evtBar.style.backgroundColor = evt.championship_color;
+                 evtBar.style.color = evt.championship_text_color;
+                 evtBar.textContent = evt.championship_shortcut;
+                 eventsContainer.appendChild(evtBar);
+              });
+              dayDiv.appendChild(eventsContainer);
+            }
+            daysDiv.appendChild(dayDiv);
+         }
+         let usedCells = emptyBefore + daysInMonth;
+         let rest = 42 - usedCells;
+         for(let i = 0; i < rest; i++){
+            let emptyDiv = document.createElement("div");
+            emptyDiv.className = "day";
+            daysDiv.appendChild(emptyDiv);
+         }
+         monthDiv.appendChild(daysDiv);
+         calendarGrid.appendChild(monthDiv);
+      }
+      months = Array.from(document.querySelectorAll(".month"));
+      months.forEach((mDiv, i) => {
+         mDiv.addEventListener("click", function() {
+            if(!singleMonthActive) {
+              singleMonthActive = true;
+              currentMonthIndex = i;
+              document.body.classList.add("single-month-active");
+              showSingleMonth(i);
+            }
+         });
+      });
+    }
+    
+    function attachMonthListeners() {
+      months = Array.from(document.querySelectorAll(".month"));
+      const btnMonthPrev = document.getElementById("btnMonthPrev");
+      const btnMonthNext = document.getElementById("btnMonthNext");
+      const btnMonthBack = document.getElementById("btnMonthBack");
+      const totalMonths = months.length;
+      months.forEach((mDiv, i)=>{
+         mDiv.addEventListener("click", ()=>{
+            if(!singleMonthActive){
+               singleMonthActive = true;
+               currentMonthIndex = i;
+               document.body.classList.add("single-month-active");
+               showSingleMonth(i);
+            }
+         });
+      });
+      btnMonthPrev.addEventListener("click", ()=>{
+         if(currentMonthIndex > 0){
+            currentMonthIndex--;
+            showSingleMonth(currentMonthIndex);
+         }
+      });
+      btnMonthNext.addEventListener("click", ()=>{
+         if(currentMonthIndex < totalMonths - 1){
+            currentMonthIndex++;
+            showSingleMonth(currentMonthIndex);
+         }
+      });
+      btnMonthBack.addEventListener("click", ()=>{
+         singleMonthActive = false;
+         currentMonthIndex = null;
+         document.body.classList.remove("single-month-active");
+         months.forEach(m=>{
+            m.style.display = "flex";
+            m.classList.remove("single-month");
+         });
+         adjustWeekHeights();
+      });
+    }
+    
+    function showSingleMonth(idx){
+      months.forEach((m, i)=>{
+         if(i === idx){
+            m.style.display = "flex";
+            m.classList.add("single-month");
+            m.querySelectorAll(".event-bar").forEach(bar=>{
+               bar.textContent = bar.getAttribute("data-championship-name");
+            });
+         } else {
+            m.style.display = "none";
+            m.classList.remove("single-month");
+         }
+      });
+      adjustWeekHeights();
+    }
+    
+    function adjustWeekHeights(){
+      const grid = document.getElementById("calendarGrid");
+      let columns = 3;
+      const w = window.innerWidth;
+      if(singleMonthActive) {
+         columns = 1;
+      } else {
+         if(w <= 1400) columns = 1;
+         else if(w <= 1720) columns = 2;
+         else columns = 3;
+      }
+      const allMonths = Array.from(grid.querySelectorAll(".month"));
+      const visibleMonths = allMonths.filter(m => m.style.display !== "none");
+      for(let i = 0; i < visibleMonths.length; i += columns) {
+         let rowSlice = visibleMonths.slice(i, i + columns);
+         let dayArrays = rowSlice.map(m => Array.from(m.querySelectorAll(".days .day")));
+         for(let weekIndex = 0; weekIndex < 6; weekIndex++){
+            let groupDays = [];
+            for(let col = 0; col < rowSlice.length; col++){
+               const offsetStart = weekIndex * 7;
+               let slice = dayArrays[col].slice(offsetStart, offsetStart + 7);
+               groupDays = groupDays.concat(slice);
+            }
+            let maxH = 0;
+            groupDays.forEach(d => d.style.height = "auto");
+            groupDays.forEach(d => {
+               const rect = d.getBoundingClientRect();
+               if(rect.height > maxH) maxH = rect.height;
+            });
+            groupDays.forEach(d => d.style.height = maxH + "px");
+         }
+      }
+    }
+    
+    function initFilters() {
+      const filtersSeriesDiv = document.getElementById("filtersSeries");
+      filtersSeriesDiv.innerHTML = '<div class="filters-title">Serie / Mistrzostwa</div>';
+      let filterSeries = {};
+      data2025.series.forEach(function(s) {
+         if(s.status == 1) {
+            filterSeries[s.id] = { series: s, championships: [] };
+         }
+      });
+      data2025.championships.forEach(function(ch) {
+         if(ch.status == 1) {
+            data2025.series_championship.forEach(function(sc) {
+               if(sc.championship_id == ch.id) {
+                  if(filterSeries[sc.series_id]) {
+                     filterSeries[sc.series_id].championships.push(ch);
+                  }
+               }
+            });
+         }
+      });
+      for(let sid in filterSeries) {
+         let seriesObj = filterSeries[sid];
+         let s = seriesObj.series;
+         let championships = seriesObj.championships;
+         let seriesColor = s.color;
+         let seriesText = s.text_color;
+         if(championships.length <= 1) {
+            let div = document.createElement("div");
+            div.className = "filter-item";
+            div.setAttribute("data-filterscope", "series");
+            div.setAttribute("data-series-id", s.id);
+            div.setAttribute("data-series-color", seriesColor);
+            div.setAttribute("data-series-text", seriesText);
+            div.innerHTML = '<div class="custom-checkbox checked" style="background-color: ' + seriesColor + ';"></div><div class="filter-name">' + s.name + '</div>';
+            filtersSeriesDiv.appendChild(div);
+         } else {
+            let groupDiv = document.createElement("div");
+            groupDiv.className = "filter-item filter-group";
+            groupDiv.setAttribute("data-filterscope", "seriesGroup");
+            groupDiv.setAttribute("data-series-id", s.id);
+            groupDiv.setAttribute("data-series-color", seriesColor);
+            groupDiv.setAttribute("data-series-text", seriesText);
+            groupDiv.innerHTML = '<div class="custom-checkbox checked" style="background-color: ' + seriesColor + ';"></div><div class="filter-name">' + s.name + '</div>';
+            filtersSeriesDiv.appendChild(groupDiv);
+            championships.forEach(function(ch) {
+              let champDiv = document.createElement("div");
+              champDiv.className = "filter-item subcategory";
+              champDiv.setAttribute("data-filterscope", "championship");
+              champDiv.setAttribute("data-championship-id", ch.id);
+              champDiv.setAttribute("data-series-id", s.id);
+              champDiv.setAttribute("data-champ-color", ch.color);
+              champDiv.setAttribute("data-champ-text", ch.text_color);
+              champDiv.innerHTML = '<div class="custom-checkbox checked" style="background-color: ' + ch.color + ';"></div><div class="filter-name">' + ch.name + '</div>';
+              filtersSeriesDiv.appendChild(champDiv);
+            });
+         }
+      }
+    }
+    
+    function updateFilterCheckboxes(){
+      document.querySelectorAll(".filter-item").forEach(item => {
+         const scope = item.getAttribute("data-filterscope");
+         const checkbox = item.querySelector(".custom-checkbox");
+         if(scope === "series" || scope === "seriesGroup"){
+            const sid = parseInt(item.getAttribute("data-series-id"), 10);
+            updateCheckbox(checkbox, activeSeries[sid]);
+         } else if(scope === "championship"){
+            const cid = parseInt(item.getAttribute("data-championship-id"), 10);
+            updateCheckbox(checkbox, activeChampionships[cid]);
+         } else if(scope === "driver"){
+            const did = parseInt(item.getAttribute("data-driver-id"), 10);
+            updateCheckbox(checkbox, activeDrivers[did]);
+         } else if(scope === "team"){
+            const tid = parseInt(item.getAttribute("data-team-id"), 10);
+            updateCheckbox(checkbox, activeTeams[tid]);
+         }
+      });
+    }
+    
+    function updateCheckbox(checkboxEl, isActive){
+      if(isActive){
+         const parentScope = checkboxEl.parentElement.getAttribute("data-filterscope");
+         if(parentScope === "championship"){
+            const champColor = checkboxEl.parentElement.getAttribute("data-champ-color");
+            if(champColor){ checkboxEl.style.backgroundColor = champColor; }
+            else { checkboxEl.classList.add("checked"); }
+         } else if(parentScope === "series" || parentScope === "seriesGroup"){
+            const seriesColor = checkboxEl.parentElement.getAttribute("data-series-color");
+            if(seriesColor){ checkboxEl.style.backgroundColor = seriesColor; }
+            else { checkboxEl.classList.add("checked"); }
+         } else {
+            checkboxEl.classList.add("checked");
+         }
+      } else {
+         checkboxEl.classList.remove("checked");
+         checkboxEl.style.backgroundColor = "#fff";
+      }
+    }
+    
+    document.getElementById("btnCheckAllSeries").addEventListener("click", ()=>{
+      document.querySelectorAll('[data-filterscope="series"], [data-filterscope="seriesGroup"], [data-filterscope="championship"]').forEach(el=>{
+         if(el.hasAttribute("data-series-id")){
+            const sid = parseInt(el.getAttribute("data-series-id"),10);
+            activeSeries[sid] = true;
+         }
+         if(el.hasAttribute("data-championship-id")){
+            const cid = parseInt(el.getAttribute("data-championship-id"),10);
+            activeChampionships[cid] = true;
+         }
+         updateCheckbox(el.querySelector(".custom-checkbox"), true);
+      });
+      applyFilters();
+    });
+    document.getElementById("btnUncheckAllSeries").addEventListener("click", ()=>{
+      document.querySelectorAll('[data-filterscope="series"], [data-filterscope="seriesGroup"], [data-filterscope="championship"]').forEach(el=>{
+         if(el.hasAttribute("data-series-id")){
+            const sid = parseInt(el.getAttribute("data-series-id"),10);
+            activeSeries[sid] = false;
+         }
+         if(el.hasAttribute("data-championship-id")){
+            const cid = parseInt(el.getAttribute("data-championship-id"),10);
+            activeChampionships[cid] = false;
+         }
+         updateCheckbox(el.querySelector(".custom-checkbox"), false);
+      });
+      applyFilters();
+    });
+    
+    const btnCheckAllDT = document.getElementById("btnCheckAllDT");
+    const btnUncheckAllDT = document.getElementById("btnUncheckAllDT");
+    btnCheckAllDT?.addEventListener("click", ()=>{
+      document.querySelectorAll('[data-filterscope="driver"], [data-filterscope="team"]').forEach(el=>{
+         if(el.hasAttribute("data-driver-id")){
+            const did = parseInt(el.getAttribute("data-driver-id"),10);
+            activeDrivers[did] = true;
+         }
+         if(el.hasAttribute("data-team-id")){
+            const tid = parseInt(el.getAttribute("data-team-id"),10);
+            activeTeams[tid] = true;
+         }
+         updateCheckbox(el.querySelector(".custom-checkbox"), true);
+      });
+      applyFilters();
+    });
+    btnUncheckAllDT?.addEventListener("click", ()=>{
+      document.querySelectorAll('[data-filterscope="driver"], [data-filterscope="team"]').forEach(el=>{
+         if(el.hasAttribute("data-driver-id")){
+            const did = parseInt(el.getAttribute("data-driver-id"),10);
+            activeDrivers[did] = false;
+         }
+         if(el.hasAttribute("data-team-id")){
+            const tid = parseInt(el.getAttribute("data-team-id"),10);
+            activeTeams[tid] = false;
+         }
+         updateCheckbox(el.querySelector(".custom-checkbox"), false);
+      });
+      applyFilters();
+    });
+    
+    document.getElementById("btnSavePreferences").addEventListener("click", ()=>{
+      const prefs = {
+         activeSeries,
+         activeChampionships,
+         activeDrivers,
+         activeTeams
+      };
+      localStorage.setItem("raceCalendarPreferences", JSON.stringify(prefs));
+      showPopAlert();
+    });
+    
+    function showPopAlert(){
+      const alertEl = document.getElementById("popAlert");
+      alertEl.style.opacity = 1;
+      setTimeout(()=>{
+         alertEl.style.opacity = 0;
+      }, 2000);
+    }
+    
+    function applyFilters(){
+      document.querySelectorAll(".event-bar").forEach(bar=>{
+         const seriesId = parseInt(bar.getAttribute("data-series-id"),10);
+         const champId = parseInt(bar.getAttribute("data-championship-id"),10);
+         const roundId = parseInt(bar.getAttribute("data-round-id"),10);
+         let show = false;
+         if(activeSeries[seriesId] || activeChampionships[champId]) {
+            show = true;
+         }
+         for(let did in activeDrivers){
+            if(activeDrivers[did]){
+               let rounds = driverRoundsMap[did] || [];
+               if(rounds.includes(roundId)){
+                  show = true;
+               }
+            }
+         }
+         for(let tid in activeTeams){
+            if(activeTeams[tid]){
+               let rounds = teamRoundsMap[tid] || [];
+               if(rounds.includes(roundId)){
+                  show = true;
+               }
+            }
+         }
+         bar.style.display = show ? "block" : "none";
+      });
+      adjustWeekHeights();
+    }
+    
+    window.addEventListener("resize", adjustWeekHeights);
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Wybór aplikacji – Kalendarz wyścigowy 2025</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background: #023E42;
+      color: #fff;
+    }
+    .button-container {
+      text-align: center;
+    }
+    .button-container a {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 18px;
+      text-decoration: none;
+      color: #fff;
+      background: #0066cc;
+      border-radius: 5px;
+    }
+    .button-container a:hover {
+      background: #004999;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var ua = navigator.userAgent;
+      var isMobile = /Mobile|Android|Silk|Kindle|BlackBerry|Opera Mini|Opera Mobi/i.test(ua);
+      if (isMobile) {
+          window.location.href = "mobile.html?choice=mobile";
+      } else {
+          window.location.href = "desktop.html?choice=desktop";
+      }
+      // Fallback – jeśli przekierowanie nie nastąpi (np. z powodu braku wsparcia), przyciski są widoczne.
+    });
+  </script>
+</head>
+<body>
+  <div class="button-container">
+    <a href="desktop.html?choice=desktop">Aplikacja desktopowa</a>
+    <a href="mobile.html?choice=mobile">Aplikacja mobilna</a>
+  </div>
+</body>
+</html>

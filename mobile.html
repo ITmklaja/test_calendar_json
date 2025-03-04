@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalendarz wyścigowy 2025 - Mobilna wersja</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      font-family: Arial, sans-serif;
+      background: #023E42; color: #fff;
+      overflow-x: hidden;
+    }
+    header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      background: #023E42;
+      padding: 10px;
+      box-sizing: border-box;
+      z-index: 1000;
+    }
+    header h1 { margin: 0; font-size: 24px; text-align: center; }
+    #filtersPanel {
+      position: fixed;
+      top: 60px; left: 0;
+      width: 100%;
+      background: #023E42;
+      padding: 10px;
+      box-sizing: border-box;
+      z-index: 1000;
+    }
+    /* Formularz filtrów z układem 3 kolumnowym */
+    #filtersPanel form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    #filtersPanel form label { display: block; font-size: 14px; }
+    #filtersPanel form input { width: 100%; padding: 5px; box-sizing: border-box; }
+    .calendar-container {
+      margin-top: 120px;
+      padding: 10px;
+    }
+    .calendar-grid {
+      display: grid;
+      gap: 15px;
+      grid-template-columns: 1fr;
+    }
+    .month {
+      background-color: #023E42; padding: 10px;
+      display: flex; flex-direction: column;
+      border-radius: 6px; position: relative;
+    }
+    .month-label { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+    .weekdays div { text-align: center; font-weight: bold; font-size: 10px; color: #eee; }
+    .days { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .day {
+      background: #023E42; position: relative; min-height: 60px;
+      border: 1px solid #fff; overflow: hidden; transition: background 0.3s;
+    }
+    .day:hover { background: #035765; }
+    .day-number {
+      position: absolute; top: 3px; left: 3px; font-size: 10px; font-weight: bold;
+    }
+    .event-bar {
+      width: 100%; font-size: 10px; font-weight: bold; line-height: 12px; border-radius: 3px;
+      margin-bottom: 1px; height: 16px; text-align: center; position: relative;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default;
+    }
+    .event-bar:hover::after {
+      content: attr(data-round); position: absolute; bottom: 100%; left: 50%;
+      transform: translate(-50%, -3px); background: #fff; color: #000; font-size: 8px;
+      padding: 1px 3px; border-radius: 3px; pointer-events: none; z-index: 999;
+    }
+    footer {
+      background: #023E42;
+      text-align: center;
+      padding: 10px 10px 40px 10px;
+      color: #fff;
+      margin-top: 20px;
+    }
+    .mobile-popup {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff0000;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 1000;
+    }
+    .mobile-popup a { color: #fff; text-decoration: none; font-weight: bold; }
+    ::-webkit-scrollbar { display: none; }
+    body { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kalendarz wyścigowy 2025</h1>
+  </header>
+  <div id="filtersPanel">
+    <form>
+      <!-- Formularz filtrów – przykładowa struktura -->
+      <div>
+        <label>Filtr 1</label>
+        <input type="checkbox" checked>
+      </div>
+      <div>
+        <label>Filtr 2</label>
+        <input type="checkbox" checked>
+      </div>
+      <div>
+        <label>Filtr 3</label>
+        <input type="checkbox" checked>
+      </div>
+    </form>
+  </div>
+  <div class="calendar-container" id="calendarContainer">
+    <div class="calendar-grid" id="calendarGrid">
+      <!-- Kalendarz generowany przez JS -->
+    </div>
+  </div>
+  <footer>
+    <p>Made by Maciej Klaja</p>
+    <p>wszystkie prawa zastrzeżone 2025</p>
+    <a href="https://buycoffee.to/maciek-klaja" target="_blank">
+      <img src="https://buycoffee.to/img/share-button-primary.png" style="width: 195px; height: 51px" alt="Postaw mi kawę na buycoffee.to">
+    </a>
+  </footer>
+  <script>
+    // Ładujemy dane z pliku JSON
+    let data2025;
+    fetch("data2025.json")
+      .then(response => response.json())
+      .then(json => {
+         data2025 = json;
+         initCalendar();
+         adjustWeekHeights();
+      })
+      .catch(err => console.error("Błąd ładowania JSON:", err));
+
+    function initCalendar() {
+      const calendarGrid = document.getElementById("calendarGrid");
+      calendarGrid.innerHTML = "";
+      const weekdaysFull = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
+      const monthNamesFull = { 1:"Styczeń",2:"Luty",3:"Marzec",4:"Kwiecień",5:"Maj",6:"Czerwiec",7:"Lipiec",8:"Sierpień",9:"Wrzesień",10:"Październik",11:"Listopad",12:"Grudzień" };
+      for(let m = 1; m <= 12; m++){
+         let monthDiv = document.createElement("div");
+         monthDiv.className = "month";
+         monthDiv.setAttribute("data-month", m);
+         monthDiv.setAttribute("data-month-full", monthNamesFull[m]);
+         let monthLabel = document.createElement("div");
+         monthLabel.className = "month-label";
+         monthLabel.textContent = monthNamesFull[m];
+         monthDiv.appendChild(monthLabel);
+         let weekdaysDiv = document.createElement("div");
+         weekdaysDiv.className = "weekdays";
+         weekdaysFull.forEach(function(wd) {
+            let wdDiv = document.createElement("div");
+            wdDiv.textContent = wd;
+            weekdaysDiv.appendChild(wdDiv);
+         });
+         monthDiv.appendChild(weekdaysDiv);
+         let daysDiv = document.createElement("div");
+         daysDiv.className = "days";
+         let firstDate = new Date("2025-" + m + "-01");
+         let firstDOW = firstDate.getDay();
+         firstDOW = firstDOW === 0 ? 7 : firstDOW;
+         let emptyBefore = firstDOW - 1;
+         for(let i=0; i<emptyBefore; i++){
+            let emptyDiv = document.createElement("div");
+            emptyDiv.className = "day";
+            daysDiv.appendChild(emptyDiv);
+         }
+         let daysInMonth = new Date(2025, m, 0).getDate();
+         for(let d=1; d<=daysInMonth; d++){
+            let dateStr = "2025-" + (m<10?"0"+m:m) + "-" + (d<10?"0"+d:d);
+            let dayDiv = document.createElement("div");
+            dayDiv.className = "day";
+            dayDiv.setAttribute("data-date", dateStr);
+            let dayNumber = document.createElement("div");
+            dayNumber.className = "day-number";
+            dayNumber.textContent = d;
+            dayDiv.appendChild(dayNumber);
+            // Tutaj dodaj logikę wyświetlania eventów z data2025.rounds powiązanych z danym dniem
+            daysDiv.appendChild(dayDiv);
+         }
+         let usedCells = emptyBefore + daysInMonth;
+         let rest = 42 - usedCells;
+         for(let i=0; i<rest; i++){
+            let emptyDiv = document.createElement("div");
+            emptyDiv.className = "day";
+            daysDiv.appendChild(emptyDiv);
+         }
+         monthDiv.appendChild(daysDiv);
+         calendarGrid.appendChild(monthDiv);
+      }
+    }
+    function adjustWeekHeights() {
+      const grid = document.getElementById("calendarGrid");
+      let allMonths = Array.from(grid.querySelectorAll(".month"));
+      allMonths.forEach(month => {
+         let dayElements = month.querySelectorAll(".days .day");
+         let maxH = 0;
+         dayElements.forEach(d => { d.style.height = "auto"; });
+         dayElements.forEach(d => {
+            const rect = d.getBoundingClientRect();
+            if(rect.height > maxH) maxH = rect.height;
+         });
+         dayElements.forEach(d => { d.style.height = maxH + "px"; });
+      });
+    }
+  </script>
+  <!-- Fixed pop-up -->
+  <div class="mobile-popup">
+    <a href="index.php">Wypróbuj aplikację desktopową</a>
+  </div>
+</body>
+</html>

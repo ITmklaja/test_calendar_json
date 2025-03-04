@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Test CSV - synchroniczny XHR</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #f0f0f0;
+      color: #333;
+    }
+    pre {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>Zawartość pliku test.csv</h1>
+  <pre id="output">Ładowanie danych...</pre>
+  <script>
+    function loadCSVSync(filename) {
+      var xhr = new XMLHttpRequest();
+      // Używamy synchronicznego żądania (trzeba pamiętać, że nie jest to zalecane do produkcji)
+      xhr.open("GET", filename, false);
+      try {
+        xhr.send(null);
+        if (xhr.status === 200 || xhr.status === 0) {
+          return xhr.responseText;
+        } else {
+          return "Błąd: status " + xhr.status;
+        }
+      } catch(e) {
+        return "Błąd: " + e;
+      }
+    }
+
+    document.getElementById("output").textContent = loadCSVSync("test.csv");
+  </script>
+</body>
+</html>

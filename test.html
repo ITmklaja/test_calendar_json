@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Test CSV - synchroniczny XHR</title>
+  <title>Test JSON z jQuery</title>
   <style>
     body {
       font-family: sans-serif;
@@ -18,28 +18,22 @@
       word-wrap: break-word;
     }
   </style>
+  <!-- Podpięcie biblioteki jQuery z CDN -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-  <h1>Zawartość pliku test.csv</h1>
+  <h1>Zawartość pliku test.json</h1>
   <pre id="output">Ładowanie danych...</pre>
   <script>
-    function loadCSVSync(filename) {
-      var xhr = new XMLHttpRequest();
-      // Używamy synchronicznego żądania (trzeba pamiętać, że nie jest to zalecane do produkcji)
-      xhr.open("GET", filename, false);
-      try {
-        xhr.send(null);
-        if (xhr.status === 200 || xhr.status === 0) {
-          return xhr.responseText;
-        } else {
-          return "Błąd: status " + xhr.status;
-        }
-      } catch(e) {
-        return "Błąd: " + e;
-      }
-    }
-
-    document.getElementById("output").textContent = loadCSVSync("test.csv");
+    // Używamy jQuery do pobrania pliku test.json
+    $.getJSON("test.json")
+      .done(function(data) {
+         // Wyświetlamy sformatowany JSON
+         $("#output").text(JSON.stringify(data, null, 2));
+      })
+      .fail(function(jqxhr, textStatus, error) {
+         $("#output").text("Błąd: " + textStatus + ", " + error);
+      });
   </script>
 </body>
 </html>
